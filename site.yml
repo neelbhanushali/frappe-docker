@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+
+  # create-site:
+  #   image: ${IMAGE}
+  #   container_name: create_site
+  #   networks:
+  #     frappe_network: null
+  #   deploy:
+  #     restart_policy:
+  #       condition: none
+  #   volumes:
+  #     - sites:/home/frappe/frappe-bench/sites
+  #     - logs:/home/frappe/frappe-bench/logs
+  #     - env:/home/frappe/frappe-bench/env
+  #     - apps:/home/frappe/frappe-bench/apps
+  #   entrypoint:
+  #     - bash
+  #     - -c
+  #   command:
+  #     - >
+  #       bench new-site --no-mariadb-socket --admin-password=admin --db-root-password=admin --install-app erpnext frontend;
+
+  abcd:
+    image: ${IMAGE}
+    container_name: abcd
+    networks:
+      frappe_network: null
+    # depends_on:
+    #   - websocket
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - nginx-entrypoint.sh
+    environment:
+      BACKEND: backend:8000
+      FRAPPE_SITE_NAME_HEADER: abcd
+      SOCKETIO: websocket:9000
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+      PROXY_READ_TIMEOUT: 120
+      CLIENT_MAX_BODY_SIZE: 50m
+      VIRTUAL_HOST: abcd
+      VIRTUAL_PORT: 8080
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      - env:/home/frappe/frappe-bench/env
+      - apps:/home/frappe/frappe-bench/apps
+    # ports:
+    #   - "8080:8080"
+
+volumes:
+  sites:
+  logs:
+  apps:
+  env:
+networks:
+  frappe_network:
+    external: true

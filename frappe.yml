@@ -1,0 +1,131 @@
+version: "3"
+
+services:
+  backend:
+    image: ${IMAGE}
+    container_name: backend
+    networks:
+      frappe_network: null
+    deploy:
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      - env:/home/frappe/frappe-bench/env
+      - apps:/home/frappe/frappe-bench/apps
+
+  configurator:
+    image: ${IMAGE}
+    container_name: configurator
+    networks:
+      frappe_network: null
+    deploy:
+      restart_policy:
+        condition: none
+    entrypoint:
+      - bash
+      - -c
+    # add redis_socketio for backward compatibility
+    command:
+      - >
+        bench set-config -g db_host $$DB_HOST;
+        bench set-config -gp db_port $$DB_PORT;
+        bench set-config -g redis_cache "redis://$$REDIS_CACHE";
+        bench set-config -g redis_queue "redis://$$REDIS_QUEUE";
+        bench set-config -g redis_socketio "redis://$$REDIS_QUEUE";
+        bench set-config -gp socketio_port $$SOCKETIO_PORT;
+        bench set-config -g root_password $$ROOT_PASSWORD;
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: "${DB_PORT}"
+      REDIS_CACHE: ${REDIS_CACHE}
+      REDIS_QUEUE: ${REDIS_QUEUE}
+      SOCKETIO_PORT: "${SOCKETIO_PORT}"
+      ROOT_PASSWORD: ${ROOT_PASSWORD}
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      - env:/home/frappe/frappe-bench/env
+      - apps:/home/frappe/frappe-bench/apps
+
+  queue-long:
+    image: ${IMAGE}
+    container_name: queue_long
+    networks:
+      frappe_network: null
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - bench
+      - worker
+      - --queue
+      - long,default,short
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      - env:/home/frappe/frappe-bench/env
+      - apps:/home/frappe/frappe-bench/apps
+
+  queue-short:
+    image: ${IMAGE}
+    container_name: queue_short
+    networks:
+      frappe_network: null
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - bench
+      - worker
+      - --queue
+      - short,default
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      - env:/home/frappe/frappe-bench/env
+      - apps:/home/frappe/frappe-bench/apps
+
+  scheduler:
+    image: ${IMAGE}
+    container_name: sheduler
+    networks:
+      frappe_network: null
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - bench
+      - schedule
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      - env:/home/frappe/frappe-bench/env
+      - apps:/home/frappe/frappe-bench/apps
+
+  websocket:
+    image: ${IMAGE}
+    container_name: websocket
+    networks:
+      frappe_network: null
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - node
+      - /home/frappe/frappe-bench/apps/frappe/socketio.js
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      - env:/home/frappe/frappe-bench/env
+      - apps:/home/frappe/frappe-bench/apps
+
+volumes:
+  sites:
+  logs:
+  apps:
+  env:
+networks:
+  frappe_network:
+    external: true

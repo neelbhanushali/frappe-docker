@@ -1,0 +1,21 @@
+version: '3.4'
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: nginx
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - nginx:/etc/nginx
+      - '/var/run/docker.sock:/tmp/docker.sock:ro'
+    networks:
+      proxy: null
+      frappe_network: null
+volumes:
+  nginx:
+networks:
+  proxy:
+    driver: bridge
+  frappe_network:
+    external: true
